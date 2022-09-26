@@ -1,6 +1,5 @@
-# https://open.kattis.com/problems/10kindsofpeople
+# https://open.kattis.com/problems/
 import sys
-import os
 
 
 class Solver:
