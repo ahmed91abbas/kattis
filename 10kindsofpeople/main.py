@@ -1,6 +1,5 @@
 # https://open.kattis.com/problems/10kindsofpeople
 import sys
-import heapq
 
 
 class Solver:
@@ -8,93 +7,47 @@ class Solver:
         self.contents = contents
         self.row_count = row_count
         self.column_count = column_count
-        self.neighbors = dict()
+        self.connections = self.get_all_connections()
 
-    def bi_dfs(self, source, target):
+    def get_all_connections(self):
+        connections = []
+        all = set(range(len(self.contents)))
+        while all:
+            index = all.pop()
+            index_connections = self.get_connections(index)
+            all -= index_connections
+            connections.append(index_connections)
+        return connections
+
+    def get_connections(self, source):
         visited = set()
-        stack = []
+        stack = list()
         stack.append(source)
-        backward_visited = set()
-        backward_stack = []
-        backward_stack.append(target)
-        while stack and backward_stack:
+        while stack:
             vertex = stack.pop()
-            backward_vertex = backward_stack.pop()
-            if vertex == target or backward_vertex == source or vertex == backward_vertex:
-                return True
             if vertex not in visited:
                 visited.add(vertex)
-                for i in self.find_neighbors(vertex):
-                    stack.append(i)
-            if backward_vertex not in backward_visited:
-                backward_visited.add(backward_vertex)
-                for j in self.find_neighbors(backward_vertex):
-                    backward_stack.append(j)
+                stack += self.find_neighbors(vertex, visited)
+        return visited
 
-    def a_star(self, start_node, end_node):
-        # https://medium.com/nerd-for-tech/graph-traversal-in-python-a-algorithm-27c30d67e0d0
-        f_distance = {node:float('inf') for node in range(len(self.contents))}
-        f_distance[start_node] = 0
-
-        g_distance = {node:float('inf') for node in range(len(self.contents))}
-        g_distance[start_node] = 0
-
-        came_from = {node:None for node in range(len(self.contents))}
-        came_from[start_node] = start_node
-
-        queue = [(0,start_node)]
-        while queue:
-            current_f_distance, current_node = heapq.heappop(queue)
-            if current_node == end_node:
-                # print('found the end_node')
-                # index = current_node
-                # print(self.get_row_col(current_node))
-                # while start_node != index:
-                #     index = came_from[index]
-                #     print(self.get_row_col(index))
-                return True
-            neighbors = self.find_neighbors(current_node)
-            for next_node in neighbors:
-                temp_g_distance = g_distance[current_node] + 1
-                if temp_g_distance < g_distance[next_node]:
-                    g_distance[next_node] = temp_g_distance
-                    heuristic = self.get_heuristic(next_node, end_node)
-                    f_distance[next_node] = temp_g_distance + heuristic
-                    came_from[next_node] = current_node
-                    heapq.heappush(queue,(f_distance[next_node], next_node))
-        return False
-
-    def get_row_col(self, index):
+    def find_neighbors(self, index, visited):
+        index = int(index)
+        current = self.contents[index]
+        result = list()
         r = index // self.column_count
         c = index - (self.column_count * r)
-        return r, c
-
-    def get_heuristic(self, source, target):
-        r1 = source // self.column_count
-        c1 = source - (self.column_count * r1)
-        r2 = target // self.column_count
-        c2 = target - (self.column_count * r2)
-        return abs(r1 - r2) + abs(c1 - c2)
-
-    def find_neighbors(self, index):
-        if index in self.neighbors:
-            return self.neighbors[index]
-        result = set()
-        r = index // self.column_count
-        c = index - (self.column_count * r)
-        indices = []
-        if r != 0:
-            indices.append(self.column_count * (r - 1) + c)
-        if r < self.row_count - 1:
-            indices.append(self.column_count * (r + 1) + c)
-        if c != 0:
-            indices.append(self.column_count * r + (c - 1))
-        if c < self.column_count - 1:
-            indices.append(self.column_count * r + (c + 1))
-        for i in indices:
-            if self.contents[index] == self.contents[i]:
-                result.add(i)
-        self.neighbors[index] = result
+        new_index = self.column_count * (r - 1) + c
+        if r != 0 and current == self.contents[new_index] and new_index not in visited:
+            result.append(new_index)
+        new_index = self.column_count * (r + 1) + c
+        if r < self.row_count - 1 and current == self.contents[new_index] and new_index not in visited:
+            result.append(new_index)
+        new_index = self.column_count * r + (c - 1)
+        if c != 0 and current == self.contents[new_index] and new_index not in visited:
+            result.append(new_index)
+        new_index = self.column_count * r + (c + 1)
+        if c < self.column_count - 1 and current == self.contents[new_index] and new_index not in visited:
+            result.append(new_index)
         return result
 
     def format_result(self, result):
@@ -109,13 +62,11 @@ class Solver:
             result_type = 'binary'
         else:
             result_type = 'decimal'
-        r1, c1 = self.get_row_col(source)
-        r2, c2 = self.get_row_col(target)
-        use_a_star = abs(r1 - r2) < self.row_count / 2 and abs(c1 - c2) > self.row_count / 3
-        if use_a_star:
-            path_exist = self.a_star(source, target)
-        else:
-            path_exist = self.bi_dfs(source, target)
+        path_exist = False
+        for group in self.connections:
+            if source in group and target in group:
+                path_exist = True
+                break
         if path_exist:
             return result_type
         else:
