@@ -9,7 +9,7 @@ test_case = TestCase()
 
 def run_test(test_nbr):
     sys.stdin = open(os.path.join('data', f'{test_nbr}.in'), 'r')
-    with open(os.path.join('data', f'{test_nbr}.out'), 'r') as f:
+    with open(os.path.join('data', f'{test_nbr}.ans'), 'r') as f:
         expected = f.read()
     start_time = time.time()
     result = main.run()
